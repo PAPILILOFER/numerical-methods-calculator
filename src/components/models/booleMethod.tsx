@@ -4,7 +4,7 @@ export const metodoBoole: IntegrationMethod = {
   name: "Método de Boole",
   id: "boole",
 
-  calculate: (f: (x: number) => number, a: number, b: number, n: number): number => {
+  calculate: (f: (x: number) => number, a: number, b: number): number => {
     
     const h = (b - a) / 4
     
@@ -21,7 +21,7 @@ export const metodoBoole: IntegrationMethod = {
     return (2 * h / 45) * suma
   },
 
-  getDetails: (f: (x: number) => number, a: number, b: number, n: number) => {
+  getDetails: (f: (x: number) => number, a: number, b: number) => {
     const h = (b - a) / 4
     const iterations: Array<CoefficientIteration> = []
     
