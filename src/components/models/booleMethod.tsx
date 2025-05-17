@@ -5,87 +5,54 @@ export const metodoBoole: IntegrationMethod = {
   id: "boole",
 
   calculate: (f: (x: number) => number, a: number, b: number, n: number): number => {
-    // Asegurarse de que n sea múltiplo de 4
-    if (n % 4 !== 0) {
-      n = Math.ceil(n / 4) * 4
-    }
+    
+    const h = (b - a) / 4
+    
+  
+    const x1 = a
+    const x2 = a + h
+    const x3 = a + 2*h
+    const x4 = a + 3*h
+    const x5 = b
 
-    const h = (b - a) / n
-    let suma = 7 * (f(a) + f(b))
-
-    for (let i = 1; i < n; i++) {
-      const x = a + i * h
-      let coef = 0
-
-      if (i % 4 === 0) {
-        coef = 14
-      } else if (i % 2 === 0) {
-        coef = 12
-      } else {
-        coef = 32
-      }
-
-      suma += coef * f(x)
-    }
-
-    return ((2 * h) / 45) * suma
+    // Aplicar la fórmula: (2h/45)[7f(x1) + 32f(x2) + 12f(x3) + 32f(x4) + 7f(x5)]
+    const suma = 7*f(x1) + 32*f(x2) + 12*f(x3) + 32*f(x4) + 7*f(x5)
+    
+    return (2 * h / 45) * suma
   },
 
   getDetails: (f: (x: number) => number, a: number, b: number, n: number) => {
-    let adjustedN = n
-    let details = ""
-
-    if (n % 4 !== 0) {
-      adjustedN = Math.ceil(n / 4) * 4
-      details = `Nota: El número de segmentos se ajustó de ${n} a ${adjustedN} para ser múltiplo de 4\n`
-    }
-
-    const h = (b - a) / adjustedN
+    const h = (b - a) / 4
     const iterations: Array<CoefficientIteration> = []
     
-    // Primer punto
-    const fa = f(a)
-    iterations.push({ 
-      i: 0, 
-      xi: a, 
-      fxi: fa, 
-      coef: 7, 
-      term: 7 * fa 
-    })
-    let suma = 7 * fa
+    // Calcular los 5 puntos y sus coeficientes
+    const puntos = [
+      { x: a, coef: 7 },
+      { x: a + h, coef: 32 },
+      { x: a + 2*h, coef: 12 },
+      { x: a + 3*h, coef: 32 },
+      { x: b, coef: 7 }
+    ]
 
-    // Puntos intermedios
-    for (let i = 1; i < adjustedN; i++) {
-      const x = a + i * h
-      const coef = i % 4 === 0 ? 14 : (i % 2 === 0 ? 12 : 32)
-      const fx = f(x)
-      const term = coef * fx
-      iterations.push({ 
-        i, 
-        xi: x, 
-        fxi: fx, 
-        coef, 
-        term 
+    let suma = 0
+    puntos.forEach((punto, i) => {
+      const fx = f(punto.x)
+      const term = punto.coef * fx
+      iterations.push({
+        i,
+        xi: punto.x,
+        fxi: fx,
+        coef: punto.coef,
+        term
       })
       suma += term
-    }
-
-    // Último punto
-    const fb = f(b)
-    iterations.push({ 
-      i: adjustedN, 
-      xi: b, 
-      fxi: fb, 
-      coef: 7, 
-      term: 7 * fb 
     })
-    suma += 7 * fb
 
-    const result = ((2 * h) / 45) * suma
-    details +=
-      `Método de Boole con ${adjustedN} segmentos\n` +
-      `Fórmula: (2h/45) * [7*(f(a) + f(b)) + 32*Σ(f(xi)) para i impar + 12*Σ(f(xi)) para i par múltiplo de 2 pero no de 4 + 14*Σ(f(xi)) para i múltiplo de 4]\n` +
-      `h = (b - a) / n = (${b} - ${a}) / ${adjustedN} = ${h}`
+    const result = (2 * h / 45) * suma
+    const details =
+      `Método de Boole (4 segmentos)\n` +
+      `Fórmula: (2h/45)[7f(x₁) + 32f(x₂) + 12f(x₃) + 32f(x₄) + 7f(x₅)]\n` +
+      `h = (b - a) / 4 = (${b} - ${a}) / 4 = ${h}`
 
     return { result, details, iterations }
   },

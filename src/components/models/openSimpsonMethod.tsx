@@ -5,27 +5,25 @@ export const metodoSimpsonAbierto: IntegrationMethod = {
   id: "simpsonAbierto",
 
   calculate: (f: (x: number) => number, a: number, b: number, n: number): number => {
-    // Asegurarse de que n sea par
     if (n % 2 !== 0) {
       n = n + 1;
     }
 
-    // Validar que n sea al menos 4 para tener suficientes puntos
     if (n < 4) {
       n = 4;
     }
 
     const h = (b - a) / n;
-    let suma = f(a + h); // Primer punto (x₁)
+    let suma = f(a + h);
 
-    // Puntos intermedios
+
     for (let i = 2; i < n; i++) {
       const x = a + i * h;
       const coef = i % 2 === 0 ? 4 : 2;
       suma += coef * f(x);
     }
 
-    suma += f(b - h); // Último punto (xₙ)
+    suma += f(b - h);
 
     return (h / 3) * suma;
   },
@@ -34,13 +32,13 @@ export const metodoSimpsonAbierto: IntegrationMethod = {
     let adjustedN = n;
     let adjustmentMessage = "";
 
-    // Asegurarse de que n sea par
+
     if (n % 2 !== 0) {
       adjustedN = n + 1;
       adjustmentMessage = `Nota: Se ajustó n de ${n} a ${adjustedN} para mantener la paridad requerida por el método.\n`;
     }
 
-    // Validar que n sea al menos 4 para tener suficientes puntos
+
     if (adjustedN < 4) {
       adjustmentMessage += `Nota: Se ajustó n a 4 (mínimo requerido) para tener suficientes puntos.\n`;
       adjustedN = 4;
@@ -50,7 +48,6 @@ export const metodoSimpsonAbierto: IntegrationMethod = {
     const iterations: CoefficientIteration[] = [];
     let suma = 0;
 
-    // Primer punto (x₁)
     const x1 = a + h;
     const fx1 = f(x1);
     iterations.push({
@@ -62,7 +59,7 @@ export const metodoSimpsonAbierto: IntegrationMethod = {
     });
     suma += fx1;
 
-    // Puntos intermedios
+
     for (let i = 2; i < adjustedN; i++) {
       const x = a + i * h;
       const coef = i % 2 === 0 ? 4 : 2;
@@ -78,7 +75,7 @@ export const metodoSimpsonAbierto: IntegrationMethod = {
       suma += term;
     }
 
-    // Último punto (xₙ)
+
     const xn = b - h;
     const fxn = f(xn);
     iterations.push({
