@@ -20,7 +20,7 @@ export const metodoTrapezoidal: IntegrationMethod = {
     const h = (b - a) / n
     const iterations: Array<CoefficientIteration> = []
     
-    // Añadir primer punto
+    // Añadir primer punto (x₀)
     const fa = f(a)
     iterations.push({
       i: 0,
@@ -32,7 +32,7 @@ export const metodoTrapezoidal: IntegrationMethod = {
 
     let suma = fa
 
-    // Puntos intermedios
+    // Puntos intermedios (x₁ hasta xₙ₋₁)
     for (let i = 1; i < n; i++) {
       const x = a + i * h
       const fx = f(x)
@@ -47,7 +47,7 @@ export const metodoTrapezoidal: IntegrationMethod = {
       suma += term
     }
 
-    // Añadir último punto
+    // Añadir último punto (xₙ)
     const fb = f(b)
     iterations.push({
       i: n,
@@ -61,7 +61,7 @@ export const metodoTrapezoidal: IntegrationMethod = {
     const result = (h / 2) * suma
     const details =
       `Método Trapezoidal con ${n} segmentos\n` +
-      `Fórmula: (h/2) * [f(a) + f(b) + 2 * Σ(f(xi))]\n` +
+      `Fórmula: (h/2)[f(x₀) + 2f(x₁) + 2f(x₂) + 2f(x₃) + ... + f(xₙ)]\n` +
       `h = (b - a) / n = (${b} - ${a}) / ${n} = ${h}`
 
     return { result, details, iterations }

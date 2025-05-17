@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Calculator, ActivityIcon as Function, LineChart as ChartIcon, AlertCircle } from "lucide-react"
+import { Calculator, ActivityIcon as Function, LineChart as ChartIcon, AlertCircle, ArrowLeft } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Table,
@@ -27,8 +27,10 @@ import { getValorAnalitico } from "@/lib/analyticalValues"
 import type { IntegrationMethod, CoefficientIteration } from "@/lib/types"
 import LineChart from "@/components/charts/chartLine"
 import DefaultFunctions from "@/components/defaultFunctions"
+import { loadExample } from "@/components/FunctionExample"
+import { handleCalculate } from "@/components/CalculateHandler"
+import Symbol from "@/components/Symbol"
 
-// Lista de todos los métodos disponibles
 const metodos: IntegrationMethod[] = [
   metodoTrapezoidal,
   metodoBoole,
@@ -65,7 +67,6 @@ export default function CalculatorMethods() {
   const handleMethodSelect = (methodId: string) => {
     setSelectedMethod(methodId)
     setActiveTab("calculator")
-    // Reset result when changing methods
     setResult(null)
     setCalculationDetails("")
     setError(null)
@@ -82,7 +83,6 @@ export default function CalculatorMethods() {
       const newValue = value.substring(0, start) + text + value.substring(end)
       setFunctionExpression(newValue)
 
-      // Focus back on the input and set cursor position after the inserted text
       setTimeout(() => {
         if (functionInputRef.current) {
           functionInputRef.current.focus()
@@ -94,164 +94,99 @@ export default function CalculatorMethods() {
     }
   }
 
-  const loadExample = (example: string) => {
-    setError(null)
+  const handleLoadExample = loadExample({
+    setFunctionExpression,
+    setLowerLimit,
+    setUpperLimit,
+    setError
+  })
 
-    switch (example) {
-      case "sqrt":
-        setFunctionExpression("sqrt(x)")
-        setLowerLimit("6")
-        setUpperLimit("12")
-        break
-      case "sin":
-        setFunctionExpression("sin(x)")
-        setLowerLimit("0")
-        setUpperLimit("pi")
-        break
-      case "poly":
-        setFunctionExpression("x^3 - 2*x^2 + 3*x - 5")
-        setLowerLimit("0")
-        setUpperLimit("2")
-        break
-      case "exp":
-        setFunctionExpression("exp(x)")
-        setLowerLimit("0")
-        setUpperLimit("1")
-        break
-      case "log":
-        setFunctionExpression("log(x)")
-        setLowerLimit("1")
-        setUpperLimit("2")
-        break
-      case "complex":
-        setFunctionExpression("sin(x) * sqrt(x)")
-        setLowerLimit("1")
-        setUpperLimit("5")
-        break
-      case "simple":
-        setFunctionExpression("x^2")
-        setLowerLimit("0")
-        setUpperLimit("1")
-        break
-      case "clear":
-        setFunctionExpression("")
-        setLowerLimit("")
-        setUpperLimit("")
-        break
-    }
-  }
-
-  const handleCalculate = () => {
-    setError(null)
-
-    if (!selectedMethod || !functionExpression || !lowerLimit || !upperLimit) {
-      setError("Por favor complete todos los campos")
-      return
-    }
-
-    // Validación específica para el método de Simpson Abierto
-    if (selectedMethod === "simpsonAbierto") {
-      if (!nValue) {
-        setError("Por favor ingrese el valor de n")
-        return
-      }
-      const n = parseInt(nValue)
-      if (isNaN(n)) {
-        setError("El valor de n debe ser un número")
-        return
-      }
-      if (n % 2 !== 0) {
-        setError("El valor de n debe ser par")
-        return
-      }
-      if (n < 4) {
-        setError("El valor de n debe ser al menos 4")
-        return
-      }
-    }
-
-    try {
-      const a = evaluateExpression(lowerLimit, parser)
-      const b = evaluateExpression(upperLimit, parser)
-      const n = selectedMethod === "simpsonAbierto" ? parseInt(nValue) : 10000
-
-      if (isNaN(a) || isNaN(b)) {
-        setError("Por favor ingrese valores numéricos válidos")
-        return
-      }
-
-      // Limpiar la expresión de la función (eliminar 'dx' si está presente)
-      const cleanExpression = functionExpression.replace(/dx$/i, "").trim()
-
-      // Crear la función evaluadora usando el parser
-      const f = (x: number) => {
-        try {
-          return parser.evaluate(cleanExpression, x)
-        } catch (error) {
-          throw new Error(`Error evaluando la función: ${error instanceof Error ? error.message : String(error)}`)
-        }
-      }
-
-      // Probar la función con varios valores para verificar que es válida
-      try {
-        const testPoints = [a, (a + b) / 2, b]
-        for (const point of testPoints) {
-          const testValue = f(point)
-          if (isNaN(testValue) || !isFinite(testValue)) {
-            throw new Error(`La función no produce un resultado válido en x = ${point}`)
-          }
-        }
-      } catch (error) {
-        setError(
-          `Error al evaluar la función: ${error instanceof Error ? error.message : String(error)}. Verifique la sintaxis.`,
-        )
-        return
-      }
-
-      // Encontrar el método seleccionado
-      const metodo = metodos.find((m) => m.id === selectedMethod)
-
-      if (!metodo) {
-        setError("Método no encontrado")
-        return
-      }
-
-      // Calcular usando el método seleccionado
-      const { result: calculatedResult, details, iterations } = metodo.getDetails(f, a, b, n)
-
-      let finalDetails = details
-
-      // Verificar si tenemos un valor analítico conocido
-      const valorAnalitico = getValorAnalitico(cleanExpression, a, b)
-      if (valorAnalitico) {
-        finalDetails += `\n\nValor analítico exacto: ${valorAnalitico.formula} = ${valorAnalitico.valorExacto}`
-        finalDetails += `\nError absoluto: ${Math.abs(calculatedResult - valorAnalitico.valorExacto)}`
-      }
-
-      setResult(calculatedResult)
-      setCalculationDetails(finalDetails)
-      setIterationData(iterations)
-    } catch (error) {
-      setError(`Error al calcular: ${error instanceof Error ? error.message : String(error)}`)
-    }
-  }
+  const handleCalculateClick = handleCalculate({
+    selectedMethod,
+    functionExpression,
+    lowerLimit,
+    upperLimit,
+    nValue,
+    setError,
+    setResult,
+    setCalculationDetails,
+    setIterationData,
+    parser,
+    metodos
+  })
 
   const getMethodTitle = () => {
     const metodo = metodos.find((m) => m.id === selectedMethod)
     return metodo ? metodo.name : "Calculadora"
   }
 
+  const resetAllValues = () => {
+    setFunctionExpression("")
+    setLowerLimit("")
+    setUpperLimit("")
+    setResult(null)
+    setCalculationDetails("")
+    setError(null)
+    setIterationData([])
+    setNValue("")
+  }
+
+  const handleBack = () => {
+    resetAllValues()
+    setSelectedMethod(null)
+    setActiveTab("selector")
+  }
+
   return (
     <Card className="w-full max-w-3xl">
       <CardHeader>
-        <CardTitle className="text-2xl">Calculadora de Métodos Numéricos</CardTitle>
-        <CardDescription>Selecciona un método numérico para realizar cálculos de integración</CardDescription>
+        {activeTab === "calculator" && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleBack}
+            className="mb-4 -mt-2 -ml-2 flex items-center gap-2 w-fit dark:bg-white dark:text-black bg-black text-white hover:bg-black/90 dark:hover:bg-white/90"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver a Selección de métodos
+          </Button>
+        )}
+        <CardTitle className="text-2xl">
+          {activeTab === "calculator" 
+            ? getMethodTitle()
+            : "Calculadora de Métodos Numéricos"
+          }
+        </CardTitle>
+        <CardDescription>
+          {activeTab === "calculator"
+            ? "Ingrese los valores para realizar el cálculo de integración numérica"
+            : "Selecciona un método numérico para realizar cálculos de integración"
+          }
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="selector">Selección de Método</TabsTrigger>
-            <TabsTrigger value="calculator" disabled={!selectedMethod}>
+        <Tabs value={activeTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 bg-muted">
+            <TabsTrigger 
+              value="selector" 
+              disabled 
+              className={`${
+                activeTab === "selector" 
+                ? "dark:text-white text-black font-bold border-2 border-primary" 
+                : "text-muted-foreground"
+              } transition-all [&:disabled]:opacity-100`}
+            >
+              Selección de Método
+            </TabsTrigger>
+            <TabsTrigger 
+              value="calculator" 
+              disabled
+              className={`${
+                activeTab === "calculator" 
+                ? "dark:text-white text-black font-bold border-2 border-primary" 
+                : "text-muted-foreground"
+              } transition-all [&:disabled]:opacity-100`}
+            >
               Calculadora
             </TabsTrigger>
           </TabsList>
@@ -279,7 +214,7 @@ export default function CalculatorMethods() {
                 onClick={() => handleMethodSelect("simpson38")}
               >
                 <Calculator className="h-6 w-6 mb-2" />
-                <span>3. Simpson 3/8 - Newton-Cotes</span>
+                <span>3. T.Simpson 3/8 </span>
               </Button>
               <Button
                 variant="outline"
@@ -287,7 +222,7 @@ export default function CalculatorMethods() {
                 onClick={() => handleMethodSelect("simpson13")}
               >
                 <Calculator className="h-6 w-6 mb-2" />
-                <span>4. Simpson 1/3 - Newton-Cotes</span>
+                <span>4. T:Simpson 1/3 </span>
               </Button>
               <Button
                 variant="outline"
@@ -300,13 +235,6 @@ export default function CalculatorMethods() {
             </div>
           </TabsContent>
           <TabsContent value="calculator" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium">{getMethodTitle()}</h3>
-              <Button variant="outline" size="sm" onClick={() => setActiveTab("selector")}>
-                Cambiar método
-              </Button>
-            </div>
-
             {error && (
               <Alert variant="destructive" className="mb-4">
                 <AlertCircle className="h-4 w-4" />
@@ -317,7 +245,7 @@ export default function CalculatorMethods() {
 
             <div className="grid gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="function">Función f(x)</Label>
+                <Label htmlFor="function" className="text-1xl font-medium my-2">Función f(x)</Label>
                 <div className="flex items-center gap-2">
                   <Function className="h-4 w-4" />
                   <Input
@@ -326,107 +254,100 @@ export default function CalculatorMethods() {
                     value={functionExpression}
                     onChange={(e) => setFunctionExpression(e.target.value)}
                     ref={functionInputRef}
+                    className="flex-1"
                   />
-                </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <Button variant="outline" size="sm" onClick={() => insertAtCursor("+")}>
-                    +
+                  <Button 
+                    onClick={handleCalculateClick} 
+                    className="shrink-0 px-4"
+                    size="sm"
+                  >
+                    Calcular
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => insertAtCursor("-")}>
-                    -
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => insertAtCursor("*")}>
-                    ×
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => insertAtCursor("/")}>
-                    ÷
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => insertAtCursor("^")}>
-                    x^n
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => insertAtCursor("sqrt(")}>
-                    √
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => insertAtCursor("sin(")}>
-                    sin
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => insertAtCursor("cos(")}>
-                    cos
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => insertAtCursor("tan(")}>
-                    tan
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => insertAtCursor("log(")}>
-                    log
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => insertAtCursor("exp(")}>
-                    e^x
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => insertAtCursor("pi")}>
-                    π
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => insertAtCursor("e")}>
-                    e
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => insertAtCursor("(")}>
-                    (
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => insertAtCursor(")")}>
-                    )
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => insertAtCursor("x")}>
-                    x
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      resetAllValues()
+                      handleLoadExample("clear")
+                    }}
+                    className="shrink-0 px-4"
+                    size="sm"
+                  >
+                    Limpiar
                   </Button>
                 </div>
-                <DefaultFunctions onSelectFunction={loadExample} />
                 <p className="text-xs text-muted-foreground mt-1">
                   Escribe tu función o selecciona los símbolos para construirla
                 </p>
+
+                <div className="grid grid-cols-2 gap-4 mt-2">
+                  <div className="grid gap-2">
+                    <Label htmlFor="lowerLimit">Límite inferior (a)</Label>
+                    <Input
+                      id="lowerLimit"
+                      placeholder="0"
+                      value={lowerLimit}
+                      onChange={(e) => setLowerLimit(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="upperLimit">Límite superior (b)</Label>
+                    <Input
+                      id="upperLimit"
+                      placeholder="1"
+                      value={upperLimit}
+                      onChange={(e) => setUpperLimit(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {(selectedMethod === "simpsonAbierto" || selectedMethod === "trapezoidal") && (
+                  <div className="grid gap-2 mt-2">
+                    <Label htmlFor="nValue">
+                      {selectedMethod === "simpsonAbierto" 
+                        ? "Número de segmentos (n)" 
+                        : "Número de segmentos"}
+                    </Label>
+                    <Input
+                      id="nValue"
+                      type="number"
+                      min={selectedMethod === "simpsonAbierto" ? "4" : "1"}
+                      step={selectedMethod === "simpsonAbierto" ? "2" : "1"}
+                      placeholder={
+                        selectedMethod === "simpsonAbierto"
+                          ? "Ingrese un número par ≥ 4"
+                          : "Ingrese el número de segmentos"
+                      }
+                      value={nValue}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        setNValue(value)
+                      }}
+                      className={
+                        selectedMethod === "simpsonAbierto" && nValue 
+                        ? (parseInt(nValue) < 4 || parseInt(nValue) % 2 !== 0) 
+                          ? "border-destructive" 
+                          : ""
+                        : ""
+                      }
+                    />
+                    {selectedMethod === "simpsonAbierto" && (
+                      <p className="text-xs text-muted-foreground">
+                        El número de segmentos debe ser par y mayor o igual a 4
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <hr className="my-2" />
+
+                <Symbol insertAtCursor={insertAtCursor} />
+
+                <hr className="my-2" />
+                <h5 className="font-medium mb-2">Ejemplos de funciones por defecto:</h5>
+                <DefaultFunctions onSelectFunction={handleLoadExample} />
+
+                <hr className="my-2" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="lowerLimit">Límite inferior (a)</Label>
-                  <Input
-                    id="lowerLimit"
-                    placeholder="0"
-                    value={lowerLimit}
-                    onChange={(e) => setLowerLimit(e.target.value)}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="upperLimit">Límite superior (b)</Label>
-                  <Input
-                    id="upperLimit"
-                    placeholder="1"
-                    value={upperLimit}
-                    onChange={(e) => setUpperLimit(e.target.value)}
-                  />
-                </div>
-              </div>
-              {selectedMethod === "simpsonAbierto" && (
-                <div className="grid gap-2">
-                  <Label htmlFor="nValue">Número de segmentos (n)</Label>
-                  <Input
-                    id="nValue"
-                    type="number"
-                    step="2"
-                    min="4"
-                    placeholder="Ingrese un número par ≥ 4"
-                    value={nValue}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      setNValue(value) // Permitir cualquier valor al escribir
-                    }}
-                    className={nValue && (parseInt(nValue) < 4 || parseInt(nValue) % 2 !== 0) ? "border-destructive" : ""}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    El número de segmentos debe ser par y mayor o igual a 4
-                  </p>
-                </div>
-              )}
-              <Button onClick={handleCalculate} className="w-full">
-                Calcular
-              </Button>
               {result !== null && (
                 <div className="mt-4 space-y-4">
                   <div className="p-4 border rounded-md bg-muted">
@@ -452,26 +373,6 @@ export default function CalculatorMethods() {
 
                       <div className="border rounded-md mt-4">
                         <Table>
-                          <TableCaption>Tabla de Valores</TableCaption>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>X</TableHead>
-                              <TableHead>Y = {convertToMathSymbols(functionExpression)}</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {iterationData.map((iteration, index) => (
-                              <TableRow key={index}>
-                                <TableCell>{Number(iteration.xi).toString()}</TableCell>
-                                <TableCell>{Number(iteration.fxi).toString()}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-
-                      <div className="border rounded-md mt-4">
-                        <Table>
                           <TableCaption>Tabla de Iteración</TableCaption>
                           <TableHeader>
                             <TableRow>
@@ -484,10 +385,30 @@ export default function CalculatorMethods() {
                               <TableRow key={index}>
                                 <TableCell>{Number(iteration.xi).toString()}</TableCell>
                                 <TableCell>
-                                  {iteration.coef === 1 
+                                  {iteration.coef === 1
                                     ? `${convertToMathSymbols(functionExpression).replace(/x/g, iteration.xi.toString())} = ${Number(iteration.term).toString()}`
                                     : `${iteration.coef}(${convertToMathSymbols(functionExpression).replace(/x/g, iteration.xi.toString())}) = ${Number(iteration.term).toString()}`}
                                 </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      <div className="border rounded-md mt-4">
+                        <Table>
+                          <TableCaption>Tabla de Valores</TableCaption>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>X</TableHead>
+                              <TableHead>Y = {convertToMathSymbols(functionExpression)}</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {iterationData.map((iteration, index) => (
+                              <TableRow key={index}>
+                                <TableCell>{Number(iteration.xi).toString()}</TableCell>
+                                <TableCell>{Number(iteration.fxi).toString()}</TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
