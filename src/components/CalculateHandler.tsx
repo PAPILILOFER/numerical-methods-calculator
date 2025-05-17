@@ -1,6 +1,6 @@
 import { MathParser, evaluateExpression } from "@/lib/parser"
 import { getValorAnalitico } from "@/lib/analyticalValues"
-import type { IntegrationMethod } from "@/lib/types"
+import type { IntegrationMethod, CoefficientIteration } from "@/lib/types"
 import { Dispatch, SetStateAction } from 'react'
 
 interface CalculateHandlerProps {
@@ -12,7 +12,7 @@ interface CalculateHandlerProps {
   setError: Dispatch<SetStateAction<string | null>>
   setResult: Dispatch<SetStateAction<number | null>>
   setCalculationDetails: Dispatch<SetStateAction<string>>
-  setIterationData: Dispatch<SetStateAction<any[]>>
+  setIterationData: Dispatch<SetStateAction<CoefficientIteration[]>>
   parser: MathParser
   metodos: IntegrationMethod[]
 }

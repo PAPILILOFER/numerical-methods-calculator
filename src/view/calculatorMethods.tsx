@@ -17,13 +17,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { MathParser, evaluateExpression } from "@/lib/parser"
+import { MathParser } from "@/lib/parser"
 import { metodoTrapezoidal } from "@/components/models/trapezoidalMethod"
 import { metodoBoole } from "@/components/models/booleMethod"
 import { metodoSimpson38 } from "@/components/models/methodSimpson3-8"
 import { metodoSimpson13 } from "@/components/models/simpsonMethod1-3"
 import { metodoSimpsonAbierto } from "@/components/models/openSimpsonMethod"
-import { getValorAnalitico } from "@/lib/analyticalValues"
 import type { IntegrationMethod, CoefficientIteration } from "@/lib/types"
 import LineChart from "@/components/charts/chartLine"
 import DefaultFunctions from "@/components/defaultFunctions"
