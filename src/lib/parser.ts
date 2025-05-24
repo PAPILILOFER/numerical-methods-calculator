@@ -12,8 +12,13 @@ export class MathParser {
       return this.parseExpression(x)
     }
   
+    // Obtener los tokens actuales
+    getTokens(): string[] {
+      return [...this.tokens]
+    }
+  
     // Divide la expresión en tokens
-    private tokenize(expression: string): void {
+    tokenize(expression: string): void {
       this.tokens = []
       let i = 0
       const len = expression.length
@@ -35,11 +40,16 @@ export class MathParser {
             i++
           }
           this.tokens.push(num)
+          
+          // Añadir multiplicación implícita si sigue una variable o paréntesis
+          if (i < len && (/[a-zA-Z]/.test(expression[i]) || expression[i] === "(")) {
+            this.tokens.push("*")
+          }
           continue
         }
   
-        // Operadores
-        if (/[+\-*/^()]/.test(char)) {
+        // Operadores y delimitadores
+        if (/[+\-*/^(),]/.test(char)) {
           this.tokens.push(char)
           i++
           continue
@@ -52,12 +62,22 @@ export class MathParser {
             name += expression[i]
             i++
           }
+          
+          // Verificar si es una función conocida antes de añadir multiplicación implícita
+          const knownFunctions = ["sin", "cos", "tan", "sqrt", "log", "exp", "abs", "root", "ln"]
           this.tokens.push(name)
+          
+          // Solo añadir multiplicación implícita si no es una función conocida seguida de paréntesis
+          if (i < len && 
+              ((/[0-9a-zA-Z]/.test(expression[i]) && !knownFunctions.includes(name)) || 
+               (expression[i] === "(" && !knownFunctions.includes(name)))) {
+            this.tokens.push("*")
+          }
           continue
         }
   
         // Caracteres desconocidos
-        i++
+        throw new Error(`Carácter no reconocido: ${char}`)
       }
     }
   
@@ -162,20 +182,50 @@ export class MathParser {
       // Funciones
       if (this.position < this.tokens.length && this.tokens[this.position] === "(") {
         this.position++
-        const arg = this.parseExpression(x)
+        const firstArg = this.parseExpression(x)
+
+        if (token === "root") {
+          // Verificar que haya una coma después del primer argumento
+          if (this.position >= this.tokens.length || this.tokens[this.position] !== ",") {
+            throw new Error("La función root requiere dos argumentos separados por coma: root(n,x)")
+          }
+          this.position++ // Avanzar después de la coma
+          
+          // Leer el segundo argumento
+          const secondArg = this.parseExpression(x)
+          
+          // Verificar el paréntesis de cierre
+          if (this.position >= this.tokens.length || this.tokens[this.position] !== ")") {
+            throw new Error("Falta el paréntesis de cierre en la función root")
+          }
+          this.position++
+
+          // Validar los argumentos
+          if (firstArg <= 0) {
+            throw new Error("El índice de la raíz debe ser positivo")
+          }
+          if (firstArg % 2 === 0 && secondArg < 0) {
+            throw new Error("No se puede calcular una raíz par de un número negativo")
+          }
+
+          // Calcular la raíz n-ésima
+          return Math.sign(secondArg) * Math.pow(Math.abs(secondArg), 1/firstArg)
+        }
+
+        // Otras funciones matemáticas
         if (this.position < this.tokens.length && this.tokens[this.position] === ")") {
           this.position++
-  
-          // Funciones matemáticas
-          if (token === "sin") return Math.sin(arg)
-          if (token === "cos") return Math.cos(arg)
-          if (token === "tan") return Math.tan(arg)
-          if (token === "sqrt") return Math.sqrt(arg)
-          if (token === "log") return Math.log(arg)
-          if (token === "exp") return Math.exp(arg)
-          if (token === "abs") return Math.abs(arg)
-  
-          throw new Error(`Función desconocida: ${token}`)
+          switch (token) {
+            case "sin": return Math.sin(firstArg)
+            case "cos": return Math.cos(firstArg)
+            case "tan": return Math.tan(firstArg)
+            case "sqrt": return Math.sqrt(firstArg)
+            case "log": return Math.log(firstArg)
+            case "ln": return Math.log(firstArg)
+            case "exp": return Math.exp(firstArg)
+            case "abs": return Math.abs(firstArg)
+            default: throw new Error(`Función desconocida: ${token}`)
+          }
         }
         throw new Error("Paréntesis no cerrado en función")
       }

@@ -22,6 +22,9 @@ export default function DefaultFunctions({ onSelectFunction }: DefaultFunctionsP
       <Button variant="outline" size="sm" onClick={() => onSelectFunction("log")}>
         log(x)
       </Button>
+      <Button variant="outline" size="sm" onClick={() => onSelectFunction("ln")}>
+        ln(x)
+      </Button>
       <Button variant="outline" size="sm" onClick={() => onSelectFunction("complex")}>
         Compleja
       </Button>

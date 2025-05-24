@@ -8,6 +8,27 @@ interface LineChartProps {
   iterations: CoefficientIteration[];
 }
 
+interface EChartsTooltipParam {
+  axisValue: string | number;
+  data: number;
+  seriesName: string;
+  value: number[];
+  name: string;
+  dataIndex: number;
+  seriesIndex: number;
+}
+
+interface EChartsAxisLabelParam {
+  value: number | string;
+  index: number;
+}
+
+interface EChartsMarkLineParam {
+  value: number;
+  dataIndex: number;
+  name?: string;
+}
+
 export default function LineChart({ iterations }: LineChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<echarts.ECharts | null>(null);
@@ -31,7 +52,16 @@ export default function LineChart({ iterations }: LineChartProps) {
         }
       },
       tooltip: {
-        trigger: 'axis'
+        trigger: 'axis',
+        formatter: function(params: EChartsTooltipParam[]) {
+          if (!Array.isArray(params) || params.length === 0) return '';
+          const point = params[0];
+          if (!point) return '';
+          
+          const x = point.axisValue;
+          const y = point.data;
+          return `x: ${x}<br/>y: ${y}`;
+        }
       },
       grid: {
         left: '5%',
@@ -62,12 +92,19 @@ export default function LineChart({ iterations }: LineChartProps) {
           }
         },
         axisLabel: {
-          color: textColor
+          color: textColor,
+          formatter: (value: EChartsAxisLabelParam['value']) => {
+            const num = Number(value);
+            return isNaN(num) ? value : num.toFixed(2);
+          }
         },
         nameTextStyle: {
           color: textColor
         },
-        data: [...new Set(iterations.map(it => Number(it.xi).toString()))]
+        data: [...new Set(iterations.map(it => {
+          const num = Number(it.xi);
+          return isNaN(num) ? it.xi : num.toFixed(2);
+        }))]
       },
       yAxis: {
         type: 'value',
@@ -82,7 +119,11 @@ export default function LineChart({ iterations }: LineChartProps) {
           }
         },
         axisLabel: {
-          color: textColor
+          color: textColor,
+          formatter: (value: EChartsAxisLabelParam['value']) => {
+            const num = Number(value);
+            return isNaN(num) ? value : num.toFixed(2);
+          }
         },
         nameTextStyle: {
           color: textColor
@@ -112,30 +153,47 @@ export default function LineChart({ iterations }: LineChartProps) {
               color: textColor,
               opacity: 0.5
             },
-            data: iterations.map(it => ([
-              {
-                xAxis: Number(it.xi),
-                yAxis: 0,
-                lineStyle: { type: 'dashed' }
-              },
-              {
-                xAxis: Number(it.xi),
-                yAxis: Number(it.fxi)
-              },
-              {
-                xAxis: 0,
-                yAxis: Number(it.fxi)
+            label: {
+              formatter: (params: EChartsMarkLineParam) => {
+                const value = Number(params.value);
+                return isNaN(value) ? String(params.value) : value.toFixed(2);
               }
-            ]))
+            },
+            data: iterations.map(it => {
+              const xi = Number(it.xi);
+              const fxi = Number(it.fxi);
+              return [
+                {
+                  xAxis: isNaN(xi) ? it.xi : xi.toFixed(2),
+                  yAxis: 0,
+                  lineStyle: { type: 'dashed' }
+                },
+                {
+                  xAxis: isNaN(xi) ? it.xi : xi.toFixed(2),
+                  yAxis: isNaN(fxi) ? it.fxi : fxi.toFixed(2)
+                },
+                {
+                  xAxis: 0,
+                  yAxis: isNaN(fxi) ? it.fxi : fxi.toFixed(2)
+                }
+              ];
+            })
           },
           label: {
             show: true,
             position: 'top',
             color: textColor,
-            formatter: (params: echarts.DefaultLabelFormatterCallbackParams) => 
-              typeof params.value === 'number' ? params.value.toString() : ''
+            formatter: (params: echarts.DefaultLabelFormatterCallbackParams) => {
+              if (typeof params.value === 'number') {
+                return isNaN(params.value) ? '' : params.value.toFixed(2);
+              }
+              return '';
+            }
           },
-          data: [...new Set(iterations.map(it => Number(it.fxi)))]
+          data: [...new Set(iterations.map(it => {
+            const num = Number(it.fxi);
+            return isNaN(num) ? Number(it.fxi) : Number(num.toFixed(2));
+          }))]
         }
       ]
     };
