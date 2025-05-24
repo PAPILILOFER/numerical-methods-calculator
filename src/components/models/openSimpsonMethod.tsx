@@ -6,49 +6,37 @@ export const metodoSimpsonAbierto: IntegrationMethod = {
 
   calculate: (f: (x: number) => number, a: number, b: number, n: number): number => {
     if (n % 2 !== 0) {
-      n = n + 1;
-    }
-
-    if (n < 4) {
-      n = 4;
+      throw new Error("El número de segmentos debe ser par");
     }
 
     const h = (b - a) / n;
-    let suma = f(a + h);
+    let suma = f(a);
 
-
-    for (let i = 2; i < n; i++) {
+    for (let i = 1; i < n; i++) {
       const x = a + i * h;
-      const coef = i % 2 === 0 ? 4 : 2;
+      const coef = i % 2 !== 0 ? 4 : 2;
       suma += coef * f(x);
     }
 
-    suma += f(b - h);
+    suma += f(b);
 
     return (h / 3) * suma;
   },
 
   getDetails: (f: (x: number) => number, a: number, b: number, n: number) => {
-    let adjustedN = n;
-    let adjustmentMessage = "";
-
-
     if (n % 2 !== 0) {
-      adjustedN = n + 1;
-      adjustmentMessage = `Nota: Se ajustó n de ${n} a ${adjustedN} para mantener la paridad requerida por el método.\n`;
+      throw new Error("El número de segmentos debe ser par");
     }
 
-
-    if (adjustedN < 4) {
-      adjustmentMessage += `Nota: Se ajustó n a 4 (mínimo requerido) para tener suficientes puntos.\n`;
-      adjustedN = 4;
-    }
-
-    const h = (b - a) / adjustedN;
+    const h = (b - a) / n;
     const iterations: CoefficientIteration[] = [];
     let suma = 0;
 
-    const x1 = a + h;
+    // Calcular y mostrar todos los puntos
+    let puntosDetails = `Puntos utilizados:\n`;
+
+    // Primer punto del cálculo (x₁ = a)
+    const x1 = a;
     const fx1 = f(x1);
     iterations.push({
       i: 1,
@@ -58,45 +46,46 @@ export const metodoSimpsonAbierto: IntegrationMethod = {
       term: fx1
     });
     suma += fx1;
+    puntosDetails += `x₁ = a = ${a}\n`;
 
-
-    for (let i = 2; i < adjustedN; i++) {
+    // Puntos intermedios
+    for (let i = 1; i < n; i++) {
       const x = a + i * h;
-      const coef = i % 2 === 0 ? 4 : 2;
+      const coef = i % 2 !== 0 ? 4 : 2;
       const fx = f(x);
       const term = coef * fx;
       iterations.push({
-        i,
+        i: i + 1,
         xi: x,
         fxi: fx,
         coef,
         term
       });
       suma += term;
+      puntosDetails += `x${i + 1} = a + ${i}h = ${a} + ${i} × ${h} = ${x}\n`;
     }
 
-
-    const xn = b - h;
+    // Último punto (xₙ = b)
+    const xn = b;
     const fxn = f(xn);
     iterations.push({
-      i: adjustedN,
+      i: n + 1,
       xi: xn,
       fxi: fxn,
       coef: 1,
       term: fxn
     });
     suma += fxn;
+    puntosDetails += `xₙ = b = ${b}\n`;
 
     const result = (h / 3) * suma;
 
     const details =
-      adjustmentMessage +
-      `Método de Simpson Abierto con ${adjustedN} puntos\n` +
+      `Método de Simpson Abierto con ${n} puntos\n` +
       `Fórmula: (h/3)[f(x₁) + 4f(x₂) + 2f(x₃) + 4f(x₄) + 2f(x₅) + ... + f(xₙ)]\n` +
       `donde n debe ser par para mantener el patrón de coeficientes 1, 4, 2, 4, 2, ..., 1\n` +
-      `h = (b - a) / n = (${b} - ${a}) / ${adjustedN} = ${h}\n` +
-      `x₁ = a + h = ${a} + ${h} = ${x1}\n` +
-      `xₙ = b - h = ${b} - ${h} = ${xn}`;
+      `h = (b - a) / n = (${b} - ${a}) / ${n} = ${h}\n\n` +
+      puntosDetails;
 
     return { result, details, iterations };
   },

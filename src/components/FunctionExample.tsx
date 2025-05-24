@@ -36,6 +36,11 @@ export const loadExample = ({
       setLowerLimit("1")
       setUpperLimit("2")
       break
+    case "ln":
+      setFunctionExpression("ln(x)")
+      setLowerLimit("1")
+      setUpperLimit("e")
+      break
     case "complex":
       setFunctionExpression("sin(x) * sqrt(x)")
       setLowerLimit("1")

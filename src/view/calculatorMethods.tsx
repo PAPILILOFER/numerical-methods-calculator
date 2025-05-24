@@ -39,7 +39,11 @@ const metodos: IntegrationMethod[] = [
 ]
 
 const convertToMathSymbols = (expression: string): string => {
-  return expression
+  const parser = new MathParser();
+  parser.tokenize(expression);
+  const tokens = parser.getTokens();
+
+  return tokens.join('')
     .replace(/sqrt\(/g, '√(')
     .replace(/\*\*/g, '^')
     .replace(/\*/g, '×')
@@ -140,9 +144,9 @@ export default function CalculatorMethods() {
     <Card className="w-full max-w-3xl">
       <CardHeader>
         {activeTab === "calculator" && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleBack}
             className="mb-4 -mt-2 -ml-2 flex items-center gap-2 w-fit dark:bg-white dark:text-black bg-black text-white hover:bg-black/90 dark:hover:bg-white/90"
           >
@@ -151,7 +155,7 @@ export default function CalculatorMethods() {
           </Button>
         )}
         <CardTitle className="text-2xl">
-          {activeTab === "calculator" 
+          {activeTab === "calculator"
             ? getMethodTitle()
             : "Calculadora de Métodos Numéricos"
           }
@@ -166,25 +170,23 @@ export default function CalculatorMethods() {
       <CardContent>
         <Tabs value={activeTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-muted">
-            <TabsTrigger 
-              value="selector" 
-              disabled 
-              className={`${
-                activeTab === "selector" 
-                ? "dark:text-white text-black font-bold border-2 border-primary" 
-                : "text-muted-foreground"
-              } transition-all [&:disabled]:opacity-100`}
+            <TabsTrigger
+              value="selector"
+              disabled
+              className={`${activeTab === "selector"
+                  ? "dark:text-white text-black font-bold border-2 border-primary"
+                  : "text-muted-foreground"
+                } transition-all [&:disabled]:opacity-100`}
             >
               Selección de Método
             </TabsTrigger>
-            <TabsTrigger 
-              value="calculator" 
+            <TabsTrigger
+              value="calculator"
               disabled
-              className={`${
-                activeTab === "calculator" 
-                ? "dark:text-white text-black font-bold border-2 border-primary" 
-                : "text-muted-foreground"
-              } transition-all [&:disabled]:opacity-100`}
+              className={`${activeTab === "calculator"
+                  ? "dark:text-white text-black font-bold border-2 border-primary"
+                  : "text-muted-foreground"
+                } transition-all [&:disabled]:opacity-100`}
             >
               Calculadora
             </TabsTrigger>
@@ -255,15 +257,15 @@ export default function CalculatorMethods() {
                     ref={functionInputRef}
                     className="flex-1"
                   />
-                  <Button 
-                    onClick={handleCalculateClick} 
+                  <Button
+                    onClick={handleCalculateClick}
                     className="shrink-0 px-4"
                     size="sm"
                   >
                     Calcular
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => {
                       resetAllValues()
                       handleLoadExample("clear")
@@ -302,36 +304,32 @@ export default function CalculatorMethods() {
                 {(selectedMethod === "simpsonAbierto" || selectedMethod === "trapezoidal") && (
                   <div className="grid gap-2 mt-2">
                     <Label htmlFor="nValue">
-                      {selectedMethod === "simpsonAbierto" 
-                        ? "Número de segmentos (n)" 
+                      {selectedMethod === "simpsonAbierto"
+                        ? "Número de segmentos (n)"
                         : "Número de segmentos"}
                     </Label>
                     <Input
                       id="nValue"
                       type="number"
-                      min={selectedMethod === "simpsonAbierto" ? "4" : "1"}
-                      step={selectedMethod === "simpsonAbierto" ? "2" : "1"}
-                      placeholder={
-                        selectedMethod === "simpsonAbierto"
-                          ? "Ingrese un número par ≥ 4"
-                          : "Ingrese el número de segmentos"
-                      }
+                      min="2"
+                      step="2"
+                      placeholder="Ingrese un número par"
                       value={nValue}
                       onChange={(e) => {
-                        const value = e.target.value
-                        setNValue(value)
+                        const value = e.target.value;
+                        setNValue(value);
                       }}
                       className={
-                        selectedMethod === "simpsonAbierto" && nValue 
-                        ? (parseInt(nValue) < 4 || parseInt(nValue) % 2 !== 0) 
-                          ? "border-destructive" 
+                        selectedMethod === "simpsonAbierto" && nValue && parseInt(nValue) % 2 !== 0
+                          ? "border-destructive"
                           : ""
-                        : ""
                       }
                     />
-                    {selectedMethod === "simpsonAbierto" && (
-                      <p className="text-xs text-muted-foreground">
-                        El número de segmentos debe ser par y mayor o igual a 4
+                    {selectedMethod === "simpsonAbierto" && nValue && (
+                      <p className={`text-xs ${parseInt(nValue) % 2 !== 0 ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+                        {parseInt(nValue) % 2 !== 0
+                          ? "El número de segmentos debe ser par"
+                          : ""}
                       </p>
                     )}
                   </div>
@@ -359,7 +357,9 @@ export default function CalculatorMethods() {
                     {calculationDetails && (
                       <div className="mt-4 pt-4 border-t">
                         <h5 className="font-medium mb-2">Detalles del cálculo:</h5>
-                        <pre className="text-xs whitespace-pre-wrap">{calculationDetails}</pre>
+                        <div className="max-h-[300px] overflow-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-zinc-700 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+                          <pre className="text-xs whitespace-pre-wrap">{calculationDetails}</pre>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -370,48 +370,55 @@ export default function CalculatorMethods() {
                         <LineChart iterations={iterationData} />
                       </div>
 
-                      <div className="border rounded-md mt-4">
-                        <Table>
-                          <TableCaption>Tabla de Iteración</TableCaption>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Xᵢ</TableHead>
-                              <TableHead>Y = {convertToMathSymbols(functionExpression)}</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {iterationData.map((iteration, index) => (
-                              <TableRow key={index}>
-                                <TableCell>{Number(iteration.xi).toString()}</TableCell>
-                                <TableCell>
-                                  {iteration.coef === 1
-                                    ? `${convertToMathSymbols(functionExpression).replace(/x/g, iteration.xi.toString())} = ${Number(iteration.term).toString()}`
-                                    : `${iteration.coef}(${convertToMathSymbols(functionExpression).replace(/x/g, iteration.xi.toString())}) = ${Number(iteration.term).toString()}`}
-                                </TableCell>
+                      <h5 className="font-medium mb-2">Tabla de Iteración</h5>
+
+                      <div className="border rounded-md mt-4">                      
+                        <div className="max-h-[300px] overflow-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-zinc-700 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+                          <Table>                     
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Xᵢ</TableHead>
+                                <TableHead>Y = {convertToMathSymbols(functionExpression)}</TableHead>
                               </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
+                            </TableHeader>
+                            <TableBody>
+                              {iterationData.map((iteration, index) => (
+                                <TableRow key={index}>
+                                  <TableCell>{Number(iteration.xi).toString()}</TableCell>
+                                  <TableCell>
+                                    {iteration.coef === 1
+                                      ? `${convertToMathSymbols(functionExpression).replace(/x/g, iteration.xi.toString())} = ${Number(iteration.term).toString()}`
+                                      : `${iteration.coef}(${convertToMathSymbols(functionExpression).replace(/x/g, iteration.xi.toString())}) = ${Number(iteration.term).toString()}`}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>                    
+
+                      <h5 className="font-medium mb-2">Tabla de Valores</h5>
 
                       <div className="border rounded-md mt-4">
-                        <Table>
-                          <TableCaption>Tabla de Valores</TableCaption>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>X</TableHead>
-                              <TableHead>Y = {convertToMathSymbols(functionExpression)}</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {iterationData.map((iteration, index) => (
-                              <TableRow key={index}>
-                                <TableCell>{Number(iteration.xi).toString()}</TableCell>
-                                <TableCell>{Number(iteration.fxi).toString()}</TableCell>
+                        <div className="max-h-[300px] overflow-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-zinc-700 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+                          <Table>
+                            <TableCaption>Tabla de Valores</TableCaption>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>X</TableHead>
+                                <TableHead>Y = {convertToMathSymbols(functionExpression)}</TableHead>
                               </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
+                            </TableHeader>
+                            <TableBody>
+                              {iterationData.map((iteration, index) => (
+                                <TableRow key={index}>
+                                  <TableCell>{Number(iteration.xi).toString()}</TableCell>
+                                  <TableCell>{Number(iteration.fxi).toString()}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
                       </div>
                     </>
                   )}
